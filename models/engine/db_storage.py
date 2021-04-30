@@ -38,20 +38,13 @@ class DBStorage:
     def all(self, cls=None):
         """ all method """
         dict_objs = {}
-        if cls:
-            for name in classes:
-                if cls == name:
-                    find = self.__session.query(classes[name]).all()
-                    for i in find:
-                        key = i.__class__.__name__ + '.' + i.id
-                        dict_objs[key] = i
-        elif (cls is None):
-            for name in classes:
-                find = self.__session.query(classes[name]).all()
-                for i in find:
-                    key = i.__class__.__name__ + '.' + i.id
-                    dict_objs[key] = i
-        return dict_objs
+        for clss in classes:
+            if cls is None or cls is classes[clss] or cls is clss:
+                objs = self.__session.query(classes[clss]).all()
+                for obj in objs:
+                    key = obj.__class__.__name__ + '.' + obj.id
+                    dict_objs[key] = obj
+        return (dict_objs)
 
     def new(self, obj):
         """ new method """
