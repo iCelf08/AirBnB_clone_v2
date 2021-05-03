@@ -21,7 +21,7 @@ classes = {"Amenity": Amenity, "City": City,
 @app.route('/hbnb_filters', strict_slashes=False)
 def hbnb_filters():
     """ hbnb_filters method: display HTML page state & city from DBStorage """
-    all_states = storage.all(State).values()
+    states = storage.all(State).values()
     ameninities = storage.all(Amenity).values()
     return (render_template('10-hbnb_filters.html', states=states,
                             amenities=ameninities))
