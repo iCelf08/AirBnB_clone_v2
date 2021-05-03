@@ -24,4 +24,4 @@ class State(BaseModel, Base):
                 # returns an obj that contains values of a dictionary as a list
                 if city.state_id == self.id:
                     cit_lis.append(city)
-                return cit_lis
+            return cit_lis
