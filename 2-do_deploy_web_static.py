@@ -1,46 +1,61 @@
 #!/usr/bin/python3
-""" a Fabric script (based on the file 1-pack_web_static.py) that distributes..
-    ..an archive to your web servers, using the function do_deploy: """
+""" A Fabric script that distributes an archive to web servers, using the
+    function deploy_archive. The script assumes archives are stored and
+    managed in the /data/web_static/releases/ directory on the remote servers. """
 
 
 from fabric.api import *
-from datetime import datetime
 from os.path import exists
 
+# Define the hosts (web servers) to which the archive will be deployed
+env.hosts = ['35.237.166.125', '54.167.61.201']
 
-env.hosts = ['35.237.166.125', '54.167.61.201']  # <IP web-01>, <IP web-02>
-# ^ All remote commands must be executed on your both web servers
-# (using env.hosts = ['<IP web-01>', 'IP web-02'] variable in your script)
-
-
-def do_deploy(archive_path):
-    """ distributes an archive to my web servers
+def deploy_archive(archive_path):
+    """ Distributes an archive to the web servers.
+    
+    Args:
+        archive_path (str): The path to the archive file to be deployed.
+        
+    Returns:
+        bool: True if the deployment was successful, False otherwise.
     """
-    if exists(archive_path) is False:
-        return False  # Returns False if the file at archive_path doesnt exist
-    filename = archive_path.split('/')[-1]
-    # so now filename is <web_static_2021041409349.tgz>
-    no_tgz = '/data/web_static/releases/' + "{}".format(filename.split('.')[0])
-    # curr = '/data/web_static/current'
-    tmp = "/tmp/" + filename
+    if not exists(archive_path):
+        return False  # Returns False if the file at archive_path doesn't exist
+
+    # Extract the filename from the path
+    archive_filename = archive_path.split('/')[-1]
+    
+    # Define the target directory and temporary file path
+    target_directory = '/data/web_static/releases/{}'.format(archive_filename.split('.')[0])
+    temporary_file = "/tmp/{}".format(archive_filename)
 
     try:
-        put(archive_path, "/tmp/")
-        # ^ Upload the archive to the /tmp/ directory of the web server
-        run("mkdir -p {}/".format(no_tgz))
-        # Uncompress the archive to the folder /data/web_static/releases/
-        # <archive filename without extension> on the web server
-        run("tar -xzf {} -C {}/".format(tmp, no_tgz))
-        run("rm {}".format(tmp))
-        run("mv {}/web_static/* {}/".format(no_tgz, no_tgz))
-        run("rm -rf {}/web_static".format(no_tgz))
-        # ^ Delete the archive from the web server
+        # Upload the archive to the /tmp/ directory on the remote server
+        put(archive_path, temporary_file)
+        
+        # Create the target directory on the remote server
+        run("mkdir -p {}".format(target_directory))
+        
+        # Extract the archive to the target directory
+        run("tar -xzf {} -C {}".format(temporary_file, target_directory))
+        
+        # Remove the temporary archive file
+        run("rm {}".format(temporary_file))
+        
+        # Move the contents of the extracted archive to the target directory
+        run("mv {}/web_static/* {}".format(target_directory, target_directory))
+        
+        # Remove the now-empty web_static directory
+        run("rm -rf {}/web_static".format(target_directory))
+        
+        # Remove the current symbolic link
         run("rm -rf /data/web_static/current")
-        # Delete the symbolic link /data/web_static/current from the web server
-        run("ln -s {}/ /data/web_static/current".format(no_tgz))
-        # Create a new the symbolic link /data/web_static/current on the
-        # web server, linked to the new version of your code
-        # (/data/web_static/releases/<archive filename without extension>)
+        
+        # Create a new symbolic link to the new version
+        run("ln -s {} /data/web_static/current".format(target_directory))
+        
         return True
-    except:
+    except Exception as e:
+        # Print the exception if needed for debugging
+        print(f"An error occurred: {e}")
         return False
